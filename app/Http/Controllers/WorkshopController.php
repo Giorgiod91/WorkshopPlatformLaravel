@@ -5,6 +5,8 @@ use App\Models\Task;
 use App\Notifications\PushToTask;
 use App\Models\Workshop;
 use App\Models\User;
+
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -15,11 +17,13 @@ class WorkshopController extends Controller
      */
     public function index()
     {
-        return view('workshops.index', ['workshop'=> Workshop::get()]);
+        $count = Workshop::count();
+        $user_count = User::count();
+        return view('workshops.index', ['workshops'=> Workshop::latest()->paginate(2), 'count'=> $count, 'user_count'=> $user_count]);
     }
 
     public function landingPage(){
-        return view('landingPage', ['workshop'=> Workshop::latest()->paginate(3)]);
+        return view('landingPage', ['workshops'=> Workshop::latest()->paginate(3)]);
     }
 
     /**
@@ -62,7 +66,7 @@ class WorkshopController extends Controller
     public function show(Workshop $workshop)
     {
 
-        Gate::authorize('workshops',$workshop);
+        //  Gate::authorize('workshops',$workshop);
         return view('workshops.show', ['workshop'=>$workshop]);
     }
 
@@ -72,9 +76,25 @@ class WorkshopController extends Controller
     public function edit(Workshop $workshop)
     {
         Gate::authorize('workshops',$workshop);
-        return view('workshops.edit', ['workshop'=>$workshop]);
+        return view('workshops.edit', ['workshops'=>$workshop]);
     }
 
+public function teilnehmen(Workshop $workshop)
+{
+    $user = Auth::user(); // aktuell eingeloggter User
+
+    // User an Workshop anhängen, ohne bestehende Einträge zu löschen
+    $workshop->users()->attach([$user->id]);
+
+    return redirect()->back()->with('success', 'Du nimmst jetzt am Workshop teil!');
+}
+public function abmelden(Workshop $workshop){
+    $user = Auth::user();
+
+    $workshop->users()->detach([$user->id]);
+
+    return redirect()->back()->with('success', 'Du hast dich für den Workshop abgemeldet!');
+}
     /**
      * Update the specified resource in storage.
      */
@@ -87,8 +107,8 @@ class WorkshopController extends Controller
         $workshop->description = $request->input('description');
         $workshop->image_path = $request->input('image_path');
 
-        $users = $workshop->users()-sync($request->input('users'));
-    foreach($request->input('users')as $userId)
+        $users = $workshop->users()->sync($request->input('users'));
+    foreach($request->input('users', [])as $userId)
         {
             $user = User::find($userId);
             $user->notify(new PushToTask($workshop));

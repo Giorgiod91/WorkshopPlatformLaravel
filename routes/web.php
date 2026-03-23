@@ -19,6 +19,8 @@ Route::get('/workshops/{workshop}',[WorkshopController::class,'show']);
 Route::put('/workshops/{workshop}',[WorkshopController::class,'update']);
 Route::delete('/workshops/{workshop}',[WorkshopController::class,'destroy']);
 
+Route::get('/workshops/{workshop}/teilnehmen',[WorkshopController::class,'teilnehmen']);
+Route::get('/workshops/{workshop}/abmelden',[WorkshopController::class,'abmelden']);
     Route::get('/logout',[SessionController::class,'destroy']);
 });
 

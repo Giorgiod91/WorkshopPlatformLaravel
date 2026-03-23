@@ -4,17 +4,17 @@
     <form action="/login" method="POST">
     @csrf
     <div class="row">
-    <label for="email">E-Mail:</label>
-    <input id="email" type="email" name="email" value="{{ old('email') }}">
+    <label  for="email">E-Mail:</label>
+    <input class="input" id="email" type="email" name="email" value="{{ old('email') }}">
     @error('email')<div class="error">{{ $message }}</div> @enderror
     </div>
     <div class="row">
-    <label for="password">Passwort:</label>
-    <input id="password" type="password" name="password">
+    <label  for="password">Passwort:</label>
+    <input class="input" id="password" type="password" name="password">
     @error('password')<div class="error">{{ $message }}</div>@enderror
     </div>
     <div class="row">
-     <button type="submit">Login</button>
+     <button class="btn btn-primary cursor-pointer" type="submit">Login</button>
     </div>
     </form>
 </div>

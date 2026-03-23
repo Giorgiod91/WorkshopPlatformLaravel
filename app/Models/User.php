@@ -29,4 +29,10 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+  public function workshops()
+    {
+        // Laravel would default the pivot table name to "task_user", but the migration created "user_task".
+        return $this->belongsToMany(workshop::class, 'user_workshop');
+  }
+
 }
