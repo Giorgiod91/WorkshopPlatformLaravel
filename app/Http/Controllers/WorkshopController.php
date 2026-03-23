@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 use App\Models\Task;
 use App\Notifications\PushToTask;
 use App\Models\Workshop;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class WorkshopController extends Controller
 {
@@ -44,7 +46,8 @@ class WorkshopController extends Controller
         Workshop::create($validated);
 
         // Benachrichtigungen
-        foreach($request->input('users')as $userId)
+        //
+        foreach($request->input('users', [])as $userId)
         {
             $user = User::find($userId);
             $user->notify(new PushToTask($workshop));

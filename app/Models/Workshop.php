@@ -18,5 +18,11 @@ class Workshop extends Model
 
 
     ];
+  public function users()
+    {
+        // Laravel would default the pivot table name to "task_user", but the migration created "user_task".
+        return $this->belongsToMany(User::class, 'user_workshop');
+  }
+
 }
 

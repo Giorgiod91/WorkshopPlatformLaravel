@@ -35,9 +35,11 @@ class PushToTask extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->line('The introduction to the notification.')
-            ->action('Notification Action', url('/'))
-            ->line('Thank you for using our application!');
+            ->greeting('Hallo')
+            ->line('Du nimmst an dem Workshop' . $this->workshop->title . 'teil.')
+            ->action('Workshop ansehen', url('/workshops/'.$this->workshop->id))
+            ->line('Viel Spaß bei dem Workshop!');
+
     }
 
     /**
@@ -48,7 +50,9 @@ class PushToTask extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            //
+            'title' => $this->workshop->title,
+            'url'=>url('/workshops/'. $this->workshop->id),
+            'message' => 'Neuer Workshop',
         ];
     }
 }

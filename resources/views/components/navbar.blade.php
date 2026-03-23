@@ -25,12 +25,12 @@
             @endauth
       <li>
         <details>
-          <summary>About</summary>
+          <summary>Mehr</summary>
           <ul class="bg-base-100 rounded-t-none p-2">
               @can('workshops')
             <li><a href="/workshops/create">Erstelle Workshops</a></li>
         @endcan
-            <li><a>Information</a></li>
+            <li><a href="/workshops">Workshop Übersicht</a></li>
           </ul>
         </details>
       </li>
