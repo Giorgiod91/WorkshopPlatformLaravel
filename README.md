@@ -9,3 +9,5 @@
 - Models
 - Login / Logout
 - Create Workshops
+- DB Seeding
+- Factory
