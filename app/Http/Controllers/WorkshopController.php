@@ -1,132 +1,169 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Models\Task;
-use App\Notifications\PushToTask;
-use App\Models\Workshop;
-use App\Models\User;
 
-use Illuminate\Support\Facades\Auth;
+use App\Models\User;
+use App\Models\Workshop;
+use App\Notifications\WorkshopsNotifications;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Notification;
 
 class WorkshopController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+  
+    public function landing()
+    {
+        $count = Workshop::count();
+        $user_count = User::count();
+
+        return view('welcome', ['count' => $count, 'user_count' => $user_count]);
+    }
+
     public function index()
     {
         $count = Workshop::count();
         $user_count = User::count();
-        return view('workshops.index', ['workshops'=> Workshop::latest()->paginate(2), 'count'=> $count, 'user_count'=> $user_count]);
+
+        return view('workshops.index', [
+            'workshops' => Workshop::latest()->paginate(2),
+            'count' => $count,
+            'user_count' => $user_count,
+        ]);
     }
 
-    public function landingPage(){
-        return view('landingPage', ['workshops'=> Workshop::latest()->paginate(3)]);
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         return view('workshops.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+  
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title'=>['required'],
-            'description'=>['required'],
-            'image_path'=>['required','image','max:2048'],
+            'title' => ['required'],
+            'description' => ['required'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'workshop_date' => ['required', 'date'],
+            'workshop_time' => ['nullable', 'date_format:H:i'],
+            'image_path' => ['required', 'image', 'max:2048'],
         ]);
-        // Bild ins Zielverzeichnis speichern
-        $validated['image_path'] = $request->file('image_path')->store('images','public');
 
-        Workshop::create($validated);
+        $validated['image_path'] = $request->file('image_path')->store('images', 'public');
+        $workshop = Workshop::create($validated);
 
-        // Benachrichtigungen
-        //
-        foreach($request->input('users', [])as $userId)
-        {
-            $user = User::find($userId);
-            $user->notify(new PushToTask($workshop));
+        $userIds = $request->input('users', []);
+        if (!empty($userIds)) {
+            $syncResult = $workshop->users()->sync($userIds);
+            foreach ($syncResult['attached'] as $userId) {
+                $user = User::find($userId);
+                if ($user) {
+                    Notification::send($user, new WorkshopsNotifications($workshop));
+                }
+            }
         }
 
         return redirect('/workshops')->with('success', 'Workshop erfolgreich angemeldet');
     }
 
-    /**
-     * Display the specified resource.
-     */
+  
     public function show(Workshop $workshop)
     {
-
-        //  Gate::authorize('workshops',$workshop);
-        return view('workshops.show', ['workshop'=>$workshop]);
+        return view('workshops.show', ['workshop' => $workshop]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
+  
     public function edit(Workshop $workshop)
     {
-        Gate::authorize('workshops',$workshop);
-        return view('workshops.edit', ['workshops'=>$workshop]);
+        Gate::authorize('workshops', $workshop);
+
+        return view('workshops.edit', ['workshops' => $workshop]);
     }
 
-public function teilnehmen(Workshop $workshop)
-{
-    $user = Auth::user(); // aktuell eingeloggter User
+    public function teilnehmen(Request $request, Workshop $workshop)
+    {
+        $user = Auth::user();
+        $wantsCertificate = $request->boolean('certificate');
 
-    // User an Workshop anhängen, ohne bestehende Einträge zu löschen
-    $workshop->users()->attach([$user->id]);
+        if ($user) {
+            $alreadyJoined = $workshop->users()->where('user_id', $user->id)->exists();
 
-    return redirect()->back()->with('success', 'Du nimmst jetzt am Workshop teil!');
-}
-public function abmelden(Workshop $workshop){
-    $user = Auth::user();
+            if (! $alreadyJoined) {
+                $workshop->users()->attach($user->id, ['wants_certificate' => $wantsCertificate]);
+                Notification::send($user, new WorkshopsNotifications($workshop));
+            } elseif ($wantsCertificate) {
+                $workshop->users()->updateExistingPivot($user->id, ['wants_certificate' => true]);
+            }
+        }
 
-    $workshop->users()->detach([$user->id]);
+        return redirect()->back()->with('success', 'Du nimmst jetzt am Workshop teil!');
+    }
 
-    return redirect()->back()->with('success', 'Du hast dich für den Workshop abgemeldet!');
-}
-    /**
-     * Update the specified resource in storage.
-     */
+    public function abmelden(Workshop $workshop)
+    {
+        $user = Auth::user();
+
+        if ($user) {
+            $workshop->users()->detach([$user->id]);
+        }
+
+        return redirect()->back()->with('success', 'Du hast dich für den Workshop abgemeldet!');
+    }
+
+ 
     public function update(Request $request, Workshop $workshop)
     {
+        Gate::authorize('workshops', $workshop);
 
-        Gate::authorize('workshops',$workshop);
-        //::TODO add validation
+        $request->validate([
+            'title' => ['required'],
+            'description' => ['required'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'workshop_date' => ['required', 'date'],
+            'workshop_time' => ['nullable', 'date_format:H:i'],
+            'image_path' => ['nullable', 'image', 'max:2048'],
+        ]);
+
         $workshop->title = $request->input('title');
         $workshop->description = $request->input('description');
-        $workshop->image_path = $request->input('image_path');
+        $workshop->price = $request->input('price');
+        $workshop->workshop_date = $request->input('workshop_date');
+        $workshop->workshop_time = $request->input('workshop_time');
 
-        $users = $workshop->users()->sync($request->input('users'));
-    foreach($request->input('users', [])as $userId)
-        {
+        if ($request->hasFile('image_path')) {
+            $workshop->image_path = $request->file('image_path')->store('images', 'public');
+        }
+
+        $workshop->save();
+
+        $userIds = $request->input('users', []);
+        foreach ($workshop->users()->sync($userIds)['attached'] as $userId) {
             $user = User::find($userId);
-            $user->notify(new PushToTask($workshop));
+            if ($user) {
+                Notification::send($user, new WorkshopsNotifications($workshop));
+            }
         }
 
         return redirect("/workshops/$workshop->id")->with('success', 'Workshop wurde aktualisiert.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+   
     public function destroy(Workshop $workshop)
     {
-
+        $workshop->users()->detach();
         $workshop->delete();
-        //::TODO fix redirect
+
         return redirect('/')->with('success', 'Workshop wurde erfolgreich entfernt');
     }
 
+    public function markNotificationsRead()
+    {
+        $user = Auth::user();
+        if ($user) {
+            $user->unreadNotifications->markAsRead();
+        }
 
+        return redirect()->back();
+    }
 }

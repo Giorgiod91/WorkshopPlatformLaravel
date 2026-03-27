@@ -17,6 +17,10 @@ return new class extends Migration
             $table->string('title');
             $table->string('description');
             $table->string('image_path');
+            $table->date('datum');
+            $table->time('uhrzeit');
+            $table->enum('certificate', ['ja', 'nein']);
+            $table->integer('preis');
 
         });
     }

@@ -1,5 +1,3 @@
 <x-layout>
-<x-landingPage>
-    </x-landingPage>
-
+<x-landingPage :count="$count" :user_count="$user_count" />
 </x-layout>

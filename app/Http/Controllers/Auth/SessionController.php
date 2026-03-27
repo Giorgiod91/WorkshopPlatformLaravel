@@ -28,7 +28,7 @@ class SessionController extends Controller
         // Prüfung DB + Einloggen + Redirect
         if(Auth::attempt($validated)){
            $request->session()->regenerate();
-           return redirect('/workshops/create')->with('success','Du bist eingeloggt!');
+           return redirect('/workshops')->with('success','Du bist eingeloggt!');
         }
 
         // Zum Formular + Fehlerausgabe

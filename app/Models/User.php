@@ -31,8 +31,8 @@ class User extends Authenticatable
     }
   public function workshops()
     {
-        // Laravel would default the pivot table name to "task_user", but the migration created "user_task".
-        return $this->belongsToMany(workshop::class, 'user_workshop');
+        // with pivot damit ich auf die Spalte "wants_certificate" in der Zwischen-Tabelle zugreifen kann 
+      return $this->belongsToMany(workshop::class, 'user_workshop')->withPivot('wants_certificate');
   }
 
 }

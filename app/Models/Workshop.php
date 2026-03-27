@@ -14,14 +14,17 @@ class Workshop extends Model
  protected $fillable = [
         'title',
         'description',
+   'price',
+   'workshop_date',
+   'workshop_time',
         'image_path',
 
 
     ];
   public function users()
     {
-        // Laravel would default the pivot table name to "task_user", but the migration created "user_task".
-        return $this->belongsToMany(User::class, 'user_workshop');
+
+      return $this->belongsToMany(User::class, 'user_workshop')->withPivot('wants_certificate');
   }
 
 }

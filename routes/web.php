@@ -3,9 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\WorkshopController;
- Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [WorkshopController::class, 'landing']);
+
+
 
 
 
@@ -21,6 +21,7 @@ Route::delete('/workshops/{workshop}',[WorkshopController::class,'destroy']);
 
 Route::get('/workshops/{workshop}/teilnehmen',[WorkshopController::class,'teilnehmen']);
 Route::get('/workshops/{workshop}/abmelden',[WorkshopController::class,'abmelden']);
+Route::get('/notifications-mark-read',[WorkshopController::class,'markNotificationsRead']);
     Route::get('/logout',[SessionController::class,'destroy']);
 });
 

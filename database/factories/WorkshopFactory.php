@@ -20,6 +20,9 @@ class WorkshopFactory extends Factory
         return [
             'title'=>fake()->name(),
             'description'=>fake()->text(50),
+            
+
+            
         ];
     }
 }
